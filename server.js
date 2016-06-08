@@ -1,4 +1,5 @@
 var http = require('http');
+var https = require('https');
 var url = require('url');
 var fs = require('fs');
 
@@ -13,7 +14,7 @@ var DocumentHandler = require('./lib/document_handler');
 // Load the configuration and set some defaults
 var config = JSON.parse(fs.readFileSync('./config.js', 'utf8'));
 config.port = process.env.PORT || config.port || 7777;
-config.host = process.env.HOST || config.host || 'localhost';
+config.host = config.host || 'localhost';
 
 // Set up the logger
 if (config.logging) {
@@ -158,5 +159,13 @@ app.use(connect_st({
 }));
 
 http.createServer(app).listen(config.port, config.host);
+winston.info('listening on http://' + config.host + ':' + config.port);
 
-winston.info('listening on ' + config.host + ':' + config.port);
+if (config.privatekey && config.certificate && config.httpsport) {
+  var privatekey = fs.readFileSync(config.privatekey).toString();
+  var certificate = fs.readFileSync(config.certificate).toString();
+  var credentials = {key: privatekey, cert: certificate};
+  https.createServer(credentials, app).listen(config.httpsport, config.host);
+  winston.info('listening on https://' + config.host + ':' + config.httpsport);
+}
+
